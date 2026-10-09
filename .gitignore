@@ -426,3 +426,20 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# macOS specific exclusions
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE specific exclusions
+.idea/
+.vscode/
+*.sln.DotSettings.user
+
+# Playwright specific exclusions
+**/test-results/
+**/playwright-report/
+**/blob-report/
+**/.local-browsers/
+**/auth.json
