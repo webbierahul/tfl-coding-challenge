@@ -15,15 +15,27 @@ public abstract class BasePage
     {
         try
         {
-            var acceptBtn = Page.Locator("#cb-cookie-consent-accept-all, button:has-text('Accept all cookies')").First;
-            if (await acceptBtn.CountAsync() > 0 && await acceptBtn.IsVisibleAsync())
-            {
-                await acceptBtn.ClickAsync();
-            }
+            var acceptBtn = Page.Locator("button:has-text('Accept all cookies'), #cb-cookie-consent-accept-all").First;
+            await acceptBtn.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+            await acceptBtn.ClickAsync();
+            await Page.WaitForTimeoutAsync(500);
         }
         catch
         {
             // Banner not present or already accepted
+        }
+
+        try
+        {
+            await Page.EvaluateAsync(@"() => {
+                const overlay = document.getElementById('cb-cookieoverlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }");
+        }
+        catch
+        {
         }
     }
 

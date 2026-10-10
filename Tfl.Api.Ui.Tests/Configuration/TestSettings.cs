@@ -4,7 +4,7 @@ namespace Tfl.Api.Ui.Tests.Configuration;
 
 public class TestSettings
 {
-    public string BaseUrl { get; set; } = "https://tfl.gov.uk/plan-a-journey";
+    public string BaseUrl { get; set; } = "https://tfl.gov.uk/plan-a-journey/?cid=plan-a-journey";
     public string Browser { get; set; } = "chromium";
     public bool Headless { get; set; } = true;
     public float DefaultTimeoutMs { get; set; } = 30000;

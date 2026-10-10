@@ -16,8 +16,8 @@ public class JourneyPlannerPage : BasePage
         _fromInput = Page.Locator("#InputFrom");
         _toInput = Page.Locator("#InputTo");
         _planJourneyButton = Page.Locator("#plan-journey-button");
-        _fromValidationError = Page.Locator("#InputFrom-error, span[data-valmsg-for='InputFrom']");
-        _toValidationError = Page.Locator("#InputTo-error, span[data-valmsg-for='InputTo']");
+        _fromValidationError = Page.Locator("#InputFrom-error");
+        _toValidationError = Page.Locator("#InputTo-error");
         _suggestions = Page.Locator(".tt-suggestion, .stop-name");
     }
 

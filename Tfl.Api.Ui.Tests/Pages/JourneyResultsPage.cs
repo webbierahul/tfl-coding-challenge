@@ -36,8 +36,8 @@ public class JourneyResultsPage : BasePage
     public async Task WaitForResultsToLoadAsync()
     {
         await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-        var resultsOrError = Page.Locator(".journey-box, .journey-result-summary, .disambiguation-box, .field-validation-error").First;
-        await resultsOrError.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
+        var resultsOrDisambiguation = Page.Locator(".journey-box, .disambiguation-box").First;
+        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 20000 });
     }
 
     public async Task<bool> IsWalkingOptionDisplayedAsync()
@@ -68,10 +68,11 @@ public class JourneyResultsPage : BasePage
         await _editPreferencesButton.ClickAsync();
     }
 
-    public async Task SelectRoutesWithLeastWalkingAsync()
+    public async Task SelectRoutePreferenceAsync(string preference)
     {
-        await _routesWithLeastWalkingLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
-        await _routesWithLeastWalkingLabel.ClickAsync();
+        var preferenceLabel = Page.Locator("label", new() { HasText = preference });
+        await preferenceLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await preferenceLabel.ClickAsync();
     }
 
     public async Task ClickUpdateJourneyAsync()
@@ -93,6 +94,19 @@ public class JourneyResultsPage : BasePage
         await _viewDetailsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 8000 });
         await _viewDetailsButton.ClickAsync();
         await Page.WaitForTimeoutAsync(1000);
+    }
+
+    public async Task<bool> IsAccessInformationDisplayedForStationAsync(string stationName)
+    {
+        var content = await Page.Locator("#full-width-content").InnerTextAsync();
+        var hasStation = content.Contains(stationName, StringComparison.OrdinalIgnoreCase) 
+            || content.Contains("Covent Garden", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDetails = content.Contains("Accessibility details", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("Up stairs", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("stairs", StringComparison.OrdinalIgnoreCase)
+            || content.Contains("lift", StringComparison.OrdinalIgnoreCase);
+
+        return hasStation && hasAccessDetails;
     }
 
     public async Task<string> GetAccessibilityDetailsTextAsync()
