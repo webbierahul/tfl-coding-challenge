@@ -15,10 +15,11 @@ public abstract class BasePage
     {
         try
         {
-            var acceptBtn = Page.Locator("button:has-text('Accept all cookies'), #cb-cookie-consent-accept-all").First;
+            var acceptBtn = Page.GetByRole(AriaRole.Button, new() { Name = "Accept all cookies" })
+                .Or(Page.Locator("#cb-cookie-consent-accept-all")).First;
+
             await acceptBtn.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
             await acceptBtn.ClickAsync();
-            await Page.WaitForTimeoutAsync(500);
         }
         catch
         {

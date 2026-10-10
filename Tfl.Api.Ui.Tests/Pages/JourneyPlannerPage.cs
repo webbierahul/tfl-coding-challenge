@@ -11,11 +11,15 @@ public class JourneyPlannerPage : BasePage
     private readonly ILocator _toValidationError;
     private readonly ILocator _suggestions;
 
+    public ILocator FromValidationError => _fromValidationError;
+    public ILocator ToValidationError => _toValidationError;
+
     public JourneyPlannerPage(IPage page) : base(page)
     {
         _fromInput = Page.Locator("#InputFrom");
         _toInput = Page.Locator("#InputTo");
-        _planJourneyButton = Page.Locator("#plan-journey-button");
+        _planJourneyButton = Page.GetByRole(AriaRole.Button, new() { Name = "Plan my journey" })
+            .Or(Page.Locator("#plan-journey-button")).First;
         _fromValidationError = Page.Locator("#InputFrom-error");
         _toValidationError = Page.Locator("#InputTo-error");
         _suggestions = Page.Locator(".tt-suggestion, .stop-name");

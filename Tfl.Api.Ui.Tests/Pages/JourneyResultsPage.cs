@@ -17,17 +17,29 @@ public class JourneyResultsPage : BasePage
     private readonly ILocator _fieldErrors;
     private readonly ILocator _disambiguationBox;
 
+    public ILocator WalkingJourneyBox => _walkingJourneyBox;
+    public ILocator CyclingJourneyBox => _cyclingJourneyBox;
+    public ILocator WalkingTimeLabel => _walkingTimeLabel;
+    public ILocator CyclingTimeLabel => _cyclingTimeLabel;
+    public ILocator FirstJourneyTime => _firstJourneyTime;
+    public ILocator JourneyBoxes => _journeyBoxes;
+    public ILocator DisambiguationBox => _disambiguationBox;
+    public ILocator FullWidthContent => Page.Locator("#full-width-content");
+
     public JourneyResultsPage(IPage page) : base(page)
     {
         _walkingJourneyBox = Page.Locator(".journey-box.walking");
         _cyclingJourneyBox = Page.Locator(".journey-box.cycling");
         _walkingTimeLabel = Page.Locator(".journey-box.walking .col2.journey-info, .journey-box.walking .col2");
         _cyclingTimeLabel = Page.Locator(".journey-box.cycling .col2.journey-info, .journey-box.cycling .col2");
-        _editPreferencesButton = Page.Locator(".edit-preferences button, button:has-text('Edit preferences')").First;
+        _editPreferencesButton = Page.GetByRole(AriaRole.Button, new() { Name = "Edit preferences" })
+            .Or(Page.Locator(".edit-preferences button, button:has-text('Edit preferences')")).First;
         _routesWithLeastWalkingLabel = Page.Locator("label", new() { HasText = "Routes with least walking" });
-        _updateJourneyButton = Page.Locator("#more-journey-options input[value='Update journey'], input[value='Update journey']").Last;
+        _updateJourneyButton = Page.Locator("#more-journey-options").GetByRole(AriaRole.Button, new() { Name = "Update journey" })
+            .Or(Page.Locator("#more-journey-options input[value='Update journey'], input[value='Update journey']")).Last;
         _firstJourneyTime = Page.Locator(".journey-time, .time-boxes").First;
-        _viewDetailsButton = Page.Locator(".view-hide-details, button:has-text('View details')").First;
+        _viewDetailsButton = Page.GetByRole(AriaRole.Button, new() { Name = "View details" })
+            .Or(Page.Locator(".view-hide-details, button:has-text('View details')")).First;
         _journeyBoxes = Page.Locator(".journey-box, .journey-option");
         _fieldErrors = Page.Locator(".field-validation-error, .info-message, .field-validation-errors");
         _disambiguationBox = Page.Locator(".disambiguation-box");
@@ -79,8 +91,8 @@ public class JourneyResultsPage : BasePage
     {
         await _updateJourneyButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
         await _updateJourneyButton.ClickAsync();
-        // Allow time for recalculated routes to render
-        await Page.WaitForTimeoutAsync(3000);
+        // Auto-wait for recalculated route to display
+        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
     }
 
     public async Task<string> GetUpdatedJourneyTimeAsync()
@@ -93,7 +105,8 @@ public class JourneyResultsPage : BasePage
     {
         await _viewDetailsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 8000 });
         await _viewDetailsButton.ClickAsync();
-        await Page.WaitForTimeoutAsync(1000);
+        // Auto-wait for expanded details content
+        await Page.Locator("#full-width-content").WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
     }
 
     public async Task<bool> IsAccessInformationDisplayedForStationAsync(string stationName)

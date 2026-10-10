@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using Reqnroll;
 using Microsoft.Playwright;
+using static Microsoft.Playwright.Assertions;
 using Tfl.Api.Ui.Tests.Configuration;
 using Tfl.Api.Ui.Tests.Pages;
 
@@ -66,30 +67,23 @@ public class JourneyPlannerSteps
     public async Task ThenJourneyResultsShouldBeDisplayed()
     {
         await _resultsPage.WaitForResultsToLoadAsync();
-        var hasResults = await _resultsPage.HasJourneyResultsAsync();
-        Assert.That(hasResults, Is.True, "Expected journey results to be displayed.");
+        await Expect(_resultsPage.JourneyBoxes.First).ToBeVisibleAsync();
     }
 
     [Then(@"the journey results should display a valid walking time")]
     public async Task ThenTheJourneyResultsShouldDisplayAValidWalkingTime()
     {
         await _resultsPage.WaitForResultsToLoadAsync();
-        var isWalkingDisplayed = await _resultsPage.IsWalkingOptionDisplayedAsync();
-        Assert.That(isWalkingDisplayed, Is.True, "Walking option should be displayed.");
-
-        var walkingTime = await _resultsPage.GetWalkingTimeAsync();
-        Assert.That(walkingTime, Does.Contain("min"), $"Walking time '{walkingTime}' should contain minutes duration.");
+        await Expect(_resultsPage.WalkingJourneyBox).ToBeVisibleAsync();
+        await Expect(_resultsPage.WalkingTimeLabel).ToContainTextAsync("min");
     }
 
     [Then(@"the journey results should display a valid cycling time")]
     public async Task ThenTheJourneyResultsShouldDisplayAValidCyclingTime()
     {
         await _resultsPage.WaitForResultsToLoadAsync();
-        var isCyclingDisplayed = await _resultsPage.IsCyclingOptionDisplayedAsync();
-        Assert.That(isCyclingDisplayed, Is.True, "Cycling option should be displayed.");
-
-        var cyclingTime = await _resultsPage.GetCyclingTimeAsync();
-        Assert.That(cyclingTime, Does.Contain("min"), $"Cycling time '{cyclingTime}' should contain minutes duration.");
+        await Expect(_resultsPage.CyclingJourneyBox).ToBeVisibleAsync();
+        await Expect(_resultsPage.CyclingTimeLabel).ToContainTextAsync("min");
     }
 
     [When(@"I edit preferences to select ""(.*)""")]
@@ -109,6 +103,7 @@ public class JourneyPlannerSteps
     [Then(@"the updated journey time should be displayed")]
     public async Task ThenTheUpdatedJourneyTimeShouldBeDisplayed()
     {
+        await Expect(_resultsPage.FirstJourneyTime).ToBeVisibleAsync();
         var journeyTime = await _resultsPage.GetUpdatedJourneyTimeAsync();
         Assert.That(journeyTime, Is.Not.Empty, "Updated journey time should be displayed.");
     }
@@ -122,6 +117,7 @@ public class JourneyPlannerSteps
     [Then(@"complete access information should be displayed for ""(.*)""")]
     public async Task ThenCompleteAccessInformationShouldBeDisplayedFor(string stationName)
     {
+        await Expect(_resultsPage.FullWidthContent).ToContainTextAsync(stationName);
         var isAccessDisplayed = await _resultsPage.IsAccessInformationDisplayedForStationAsync(stationName);
         Assert.That(isAccessDisplayed, Is.True, $"Access information should be displayed for {stationName}.");
     }
@@ -143,14 +139,12 @@ public class JourneyPlannerSteps
     [Then(@"a validation error ""(.*)"" should be displayed for the From field")]
     public async Task ThenAValidationErrorShouldBeDisplayedForTheFromField(string expectedError)
     {
-        var actualError = await _plannerPage.GetFromValidationErrorAsync();
-        Assert.That(actualError, Is.EqualTo(expectedError));
+        await Expect(_plannerPage.FromValidationError).ToHaveTextAsync(expectedError);
     }
 
     [Then(@"a validation error ""(.*)"" should be displayed for the To field")]
     public async Task ThenAValidationErrorShouldBeDisplayedForTheToField(string expectedError)
     {
-        var actualError = await _plannerPage.GetToValidationErrorAsync();
-        Assert.That(actualError, Is.EqualTo(expectedError));
+        await Expect(_plannerPage.ToValidationError).ToHaveTextAsync(expectedError);
     }
 }
