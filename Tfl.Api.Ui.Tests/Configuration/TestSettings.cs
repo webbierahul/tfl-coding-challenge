@@ -2,9 +2,6 @@ using System.Text.Json;
 
 namespace Tfl.Api.Ui.Tests.Configuration;
 
-/// <summary>
-/// Strong-typed test configuration supporting appsettings.json and CI/CD environment overrides.
-/// </summary>
 public class TestSettings
 {
     public string BaseUrl { get; set; } = "https://tfl.gov.uk/plan-a-journey";
@@ -35,11 +32,11 @@ public class TestSettings
             }
             catch
             {
-                // Fall back gracefully to sensible defaults if file cannot be read
+                // Fall back to defaults
             }
         }
 
-        // Allow CI/CD or local CLI environment overrides
+        // Allow CI or local overrides via environment variables
         var envBaseUrl = Environment.GetEnvironmentVariable("BASE_URL");
         if (!string.IsNullOrWhiteSpace(envBaseUrl))
         {
