@@ -70,7 +70,31 @@ public class TestHooks
         }
 
         if (_page != null)
+        {
+            var video = _page.Video;
             await _page.CloseAsync();
+
+            if (video != null)
+            {
+                try
+                {
+                    var videoPath = await video.PathAsync();
+                    if (!string.IsNullOrEmpty(videoPath) && File.Exists(videoPath))
+                    {
+                        var scenarioTitle = string.Join("_", _scenarioContext.ScenarioInfo.Title.Split(Path.GetInvalidFileNameChars()));
+                        var videoDir = Path.GetDirectoryName(videoPath)!;
+                        var targetPath = Path.Combine(videoDir, $"{scenarioTitle}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.webm");
+                        File.Move(videoPath, targetPath);
+                        TestContext.AddTestAttachment(targetPath, "Scenario Video");
+                        TestContext.Out.WriteLine($"Saved scenario video: {targetPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TestContext.Out.WriteLine($"Could not process scenario video: {ex.Message}");
+                }
+            }
+        }
 
         if (_browserContext != null)
             await _browserContext.DisposeAsync();

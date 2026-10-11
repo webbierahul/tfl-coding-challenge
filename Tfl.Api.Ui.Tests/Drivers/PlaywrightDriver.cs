@@ -32,12 +32,21 @@ public class PlaywrightDriver : IAsyncDisposable
 
     public async Task<IBrowserContext> CreateContextAsync(IBrowser browser, TestSettings settings)
     {
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions
+        var contextOptions = new BrowserNewContextOptions
         {
             ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
             UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        });
+        };
 
+        if (settings.RecordVideo)
+        {
+            var videosDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Videos");
+            Directory.CreateDirectory(videosDir);
+            contextOptions.RecordVideoDir = videosDir;
+            contextOptions.RecordVideoSize = new RecordVideoSize { Width = 1280, Height = 800 };
+        }
+
+        var context = await browser.NewContextAsync(contextOptions);
         context.SetDefaultTimeout(settings.DefaultTimeoutMs);
         return context;
     }

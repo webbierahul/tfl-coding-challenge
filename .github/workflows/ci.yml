@@ -1,0 +1,50 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Journey Planner Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Install Playwright browsers and dependencies
+        run: pwsh Tfl.Api.Ui.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: dotnet test --no-build --configuration Release --logger "html;LogFileName=test-report.html" --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal" --results-directory ./TestResults
+        env:
+          RECORD_VIDEO: "true"
+
+      - name: Upload Test Report & Video Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfl-test-report-and-videos
+          retention-days: 90
+          path: |
+            ./TestResults/test-report.html
+            ./TestResults/test-results.trx
+            Tfl.Api.Ui.Tests/bin/Release/net10.0/Videos/
+            Tfl.Api.Ui.Tests/bin/Release/net10.0/Screenshots/
+          if-no-files-found: ignore

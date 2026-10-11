@@ -9,6 +9,7 @@ public class TestSettings
     public bool Headless { get; set; } = true;
     public float DefaultTimeoutMs { get; set; } = 30000;
     public float SlowMoMs { get; set; } = 0;
+    public bool RecordVideo { get; set; } = false;
 
     public static TestSettings Load()
     {
@@ -53,6 +54,12 @@ public class TestSettings
         if (!string.IsNullOrWhiteSpace(envBrowser))
         {
             settings.Browser = envBrowser;
+        }
+
+        var envRecordVideo = Environment.GetEnvironmentVariable("RECORD_VIDEO");
+        if (bool.TryParse(envRecordVideo, out var recordVideoParsed))
+        {
+            settings.RecordVideo = recordVideoParsed;
         }
 
         return settings;

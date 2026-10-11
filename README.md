@@ -1,5 +1,9 @@
 # TfL Journey Planner Automation Framework
 
+[![CI Tests](https://github.com/webbierahul/tfl-coding-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/webbierahul/tfl-coding-challenge/actions/workflows/ci.yml)
+
+> **Continuous Integration**: Automated test execution runs on GitHub Actions. Reviewers can inspect live test runs, step logs, and test artifacts directly at: [**GitHub Actions CI Runs**](https://github.com/webbierahul/tfl-coding-challenge/actions/workflows/ci.yml).
+
 An automated test framework built in C# and .NET 10 for the [Transport for London (TfL) Journey Planner](https://tfl.gov.uk/plan-a-journey). The suite automates and validates commuter journey planning, multi-modal travel options, route preference updates, accessibility information, and boundary error conditions.
 
 ---
@@ -37,9 +41,12 @@ While the brief mentions Playwright and ChromeDriver, this implementation standa
 - Reqnroll (.NET 10 compatible successor to SpecFlow) provides living documentation in plain English Gherkin syntax.
 - Lightweight constructor injection (`BoDi.IObjectContainer`) injects `IPage`, `TestSettings`, and page objects into step definitions without global static state.
 
-### 4. Test Isolation and Failure Triage
+### 4. Test Isolation, Video Recording & Reporting
 - **Clean State per Scenario**: Each scenario executes in an isolated `IBrowserContext`, ensuring cookies, cache, and session storage do not bleed across tests.
+- **Scenario Video Recordings**: Full-motion `.webm` videos are captured for each scenario, named after the scenario title (e.g. `Plan_a_valid_journey_using_autocomplete_suggestions_*.webm`), enabling visual verification of executions.
+- **Standalone HTML Test Report**: A native HTML report (`test-report.html`) is produced with full step execution breakdowns, timings, and status summaries.
 - **Automated Failure Screenshots**: The `[AfterScenario]` hook detects test failures, automatically takes full-page PNG screenshots into `Screenshots/`, and attaches them to the NUnit test context.
+- **90-Day CI Artifact Retention**: All HTML reports, videos, screenshots, and TRX logs are automatically archived in GitHub Actions with the maximum 90-day retention period.
 
 ### 5. Configuration Management
 - Configuration is loaded via `appsettings.json` with fallback support for CI/CD environment variable overrides (`BASE_URL`, `HEADLESS`, `BROWSER`).

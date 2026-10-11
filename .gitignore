@@ -443,6 +443,10 @@ FodyWeavers.xsd
 **/blob-report/
 **/.local-browsers/
 **/auth.json
+**/Videos/
+**/Screenshots/
+TestResults/
+[Tt]est[Rr]esults/
 
 # Reqnroll / SpecFlow generated files
 *.feature.cs
