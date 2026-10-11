@@ -3,9 +3,16 @@ name: CI Tests
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Target runner environment'
+        required: true
+        default: 'ubuntu-latest'
+        type: choice
+        options:
+          - ubuntu-latest
+          - self-hosted
 
 permissions:
   contents: read
@@ -14,7 +21,7 @@ permissions:
 jobs:
   build:
     name: 🔨 Build & Compile
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     timeout-minutes: 5
 
     steps:
@@ -35,7 +42,7 @@ jobs:
   test:
     name: 🧪 Run Playwright Tests
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     timeout-minutes: 15
 
     steps:
@@ -54,10 +61,20 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Install Playwright Chromium & dependencies
-        run: pwsh Tfl.Api.Ui.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            pwsh Tfl.Api.Ui.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+          else
+            pwsh Tfl.Api.Ui.Tests/bin/Release/net10.0/playwright.ps1 install chromium
+          fi
 
-      - name: Execute tests in Xvfb headed mode
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x800x24" dotnet test --no-build --configuration Release --logger "html;LogFileName=test-report.html" --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal" --results-directory ./TestResults
+      - name: Execute Playwright Tests
+        run: |
+          if command -v xvfb-run >/dev/null 2>&1; then
+            xvfb-run --auto-servernum --server-args="-screen 0 1280x800x24" dotnet test --no-build --configuration Release --logger "html;LogFileName=test-report.html" --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal" --results-directory ./TestResults
+          else
+            dotnet test --no-build --configuration Release --logger "html;LogFileName=test-report.html" --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal" --results-directory ./TestResults
+          fi
         env:
           HEADLESS: "false"
           RECORD_VIDEO: "true"
@@ -79,7 +96,7 @@ jobs:
     name: 📊 Publish Test Summary
     needs: test
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
 
     steps:
       - name: Download Test Artifacts
