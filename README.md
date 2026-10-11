@@ -52,6 +52,16 @@ While the brief mentions Playwright and ChromeDriver, this implementation standa
 - Configuration is loaded via `appsettings.json` with fallback support for CI/CD environment variable overrides (`BASE_URL`, `HEADLESS`, `BROWSER`).
 - Targets the canonical Journey Planner URL (`https://tfl.gov.uk/plan-a-journey/?cid=plan-a-journey`), preventing premature navigation completion on HTTP 301 redirects.
 
+### 6. Cloudflare Bot Protection & CI Considerations
+- **Why Tests Pass Locally vs. CI**:
+  - **IP Reputation**: Local runs originate from trusted residential/office ISPs in the UK. In contrast, public CI runners (GitHub Actions hosted on Microsoft Azure) originate from data center IP ranges (ASN 8075), which Cloudflare's Bot Management flags as elevated risk, triggering Turnstile ("Verify you are human").
+  - **Automation Signatures**: Standard headless Chromium advertises `navigator.webdriver = true` and lacks full desktop rendering signals.
+- **Applied Mitigations**:
+  - Launched Chromium with `--disable-blink-features=AutomationControlled` and masked `navigator.webdriver` via `AddInitScriptAsync`.
+  - Configured matching UK locale (`en-GB`) and London timezone (`Europe/London`).
+  - Configured GitHub Actions with `xvfb-run` to execute in headed mode on a virtual 1280x800 display, eliminating headless canvas/font discrepancies.
+- **Enterprise Best Practice**: In enterprise environments, synthetic automation suites against Cloudflare-protected domains utilize Cloudflare WAF bypass rules (such as a secure CI header or IP whitelisting) or run against staging environments where bot challenges are disabled.
+
 ---
 
 ## Tech Stack

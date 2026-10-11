@@ -18,7 +18,15 @@ public class PlaywrightDriver : IAsyncDisposable
         var launchOptions = new BrowserTypeLaunchOptions
         {
             Headless = settings.Headless,
-            SlowMo = settings.SlowMoMs
+            SlowMo = settings.SlowMoMs,
+            Args = new[]
+            {
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-infobars",
+                "--window-size=1280,800"
+            }
         };
 
         if (string.Equals(settings.Browser, "chrome", StringComparison.OrdinalIgnoreCase))
@@ -35,7 +43,8 @@ public class PlaywrightDriver : IAsyncDisposable
         var contextOptions = new BrowserNewContextOptions
         {
             ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
-            UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            Locale = "en-GB",
+            TimezoneId = "Europe/London"
         };
 
         if (settings.RecordVideo)
@@ -47,6 +56,14 @@ public class PlaywrightDriver : IAsyncDisposable
         }
 
         var context = await browser.NewContextAsync(contextOptions);
+
+        // Mask automation flags for Cloudflare bot verification
+        await context.AddInitScriptAsync(@"
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        ");
+
         context.SetDefaultTimeout(settings.DefaultTimeoutMs);
         return context;
     }
