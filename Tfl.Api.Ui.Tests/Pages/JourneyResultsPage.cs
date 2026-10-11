@@ -89,8 +89,20 @@ public class JourneyResultsPage : BasePage
     {
         await _updateJourneyButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
         await _updateJourneyButton.ClickAsync();
-        // Wait for results container or journey boxes to reload with recalculated route
-        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+
+        // Condition-based wait: if an active loader or "Fetching results" animation appears, wait for it to clear
+        var loader = Page.Locator(".loader, .waiting, .loading, text='Fetching results'").First;
+        try
+        {
+            await loader.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 2000 });
+            await loader.WaitForAsync(new() { State = WaitForSelectorState.Hidden, Timeout = 30000 });
+        }
+        catch
+        {
+            // Loader was brief or already resolved
+        }
+
+        // Wait for recalculated journey results to be rendered and visible
         var resultsOrDisambiguation = Page.Locator(".journey-box, .disambiguation-box, .journey-result-summary").First;
         await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
         await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });

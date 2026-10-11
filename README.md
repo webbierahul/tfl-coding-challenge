@@ -31,15 +31,19 @@ Rather than writing large, monolithic page classes, the architecture separates r
   - **`AutocompleteInputComponent`**: Encapsulates the Twitter Typeahead dropdown pattern (typing partial text, waiting for suggestions, and selecting matching items). Reused across both `FromInput` and `ToInput` fields, eliminating duplicate code and making the addition of future search fields (e.g., "Via") trivial.
   - **`CookieBannerComponent`**: Encapsulates cookie consent dialog detection, acceptance, and modal overlay dismissal, separating cross-cutting compliance popups from business test logic.
 
-### 2. Addressing the Brief's "Playwright and Chromedriver" Requirement
+### 2. Addressing the Brief's "Playwright and Chromedriver" Requirement (Compliance Note)
 The original challenge instructions state:
 > *"Use 'Playwright' and 'Chromedriver' dotnet (.NET) libraries for UI Automation."*
 
+**Current Implementation & Compliance Status**:
+The submitted automation suite implements **Microsoft Playwright** exclusively. Neither `Selenium.WebDriver` nor `Selenium.WebDriver.ChromeDriver` is currently referenced in project dependencies to prevent dead-code bloat, redundant driver binaries, and dual-lifecycle complexity.
+
+**Architectural Rationale & Trade-offs**:
 In the .NET ecosystem, **Microsoft Playwright** communicates directly with Chromium via the native Chrome DevTools Protocol (CDP) and does not utilize `chromedriver` (which is part of the Selenium WebDriver ecosystem). We standardised on Microsoft Playwright driving Chromium because:
 - **Native CDP Communication**: Controls Chromium directly without requiring an intermediate `chromedriver` binary or matching local Chrome browser versions.
 - **Web-First Assertions & Auto-Waiting**: Playwright's `Expect(locator)` natively polls and retries until DOM elements satisfy actionable states (visible, enabled, stable), avoiding arbitrary sleeps.
-- **Fast, Deterministic Execution**: Executes all 6 scenarios in isolated browser contexts in headless or headed mode in ~20 seconds.
-- **Extensible Driver Architecture**: If an enterprise requirement or legacy framework migration necessitates Selenium WebDriver/ChromeDriver support alongside Playwright, an `IBrowserDriver` / `DriverFactory` abstraction can readily wrap both engines. We highlight this architectural distinction and recommend clarifying whether TfL intended Playwright automating Chromium, or an evaluation across both engines.
+- **Fast, Deterministic Execution**: Executes all 6 scenarios in isolated browser contexts in headless or headed mode in ~17-20 seconds.
+- **Identified Gap & Extensible Driver Design**: While this solution does not implement ChromeDriver, if TfL intended a side-by-side framework comparison or strictly requires both libraries, an `IBrowserDriver` / `DriverFactory` abstraction could be introduced alongside a `Selenium.WebDriver` package reference. We highlight this architectural choice and recommend clarifying whether TfL intended Playwright automating Chromium, or an evaluation across both engines.
 
 ### 3. Reqnroll BDD & BoDi Dependency Injection
 - Reqnroll (.NET 10 compatible successor to SpecFlow) provides living documentation in plain English Gherkin syntax.

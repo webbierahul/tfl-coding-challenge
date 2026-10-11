@@ -75,7 +75,8 @@ public class JourneyPlannerSteps
     {
         await _resultsPage.WaitForResultsToLoadAsync();
         await Expect(_resultsPage.WalkingJourneyBox).ToBeVisibleAsync();
-        await Expect(_resultsPage.WalkingTimeLabel).ToContainTextAsync("min");
+        var walkingTime = await _resultsPage.GetWalkingTimeAsync();
+        Assert.That(walkingTime, Does.Match(@"\d+\s*min"), "Walking journey time should specify a valid duration in minutes.");
     }
 
     [Then(@"the journey results should display a valid cycling time")]
@@ -83,7 +84,8 @@ public class JourneyPlannerSteps
     {
         await _resultsPage.WaitForResultsToLoadAsync();
         await Expect(_resultsPage.CyclingJourneyBox).ToBeVisibleAsync();
-        await Expect(_resultsPage.CyclingTimeLabel).ToContainTextAsync("min");
+        var cyclingTime = await _resultsPage.GetCyclingTimeAsync();
+        Assert.That(cyclingTime, Does.Match(@"\d+\s*min"), "Cycling journey time should specify a valid duration in minutes.");
     }
 
     [When(@"I edit preferences to select ""(.*)""")]
@@ -106,6 +108,7 @@ public class JourneyPlannerSteps
         await Expect(_resultsPage.FirstJourneyTime).ToBeVisibleAsync();
         var journeyTime = await _resultsPage.GetUpdatedJourneyTimeAsync();
         Assert.That(journeyTime, Is.Not.Empty, "Updated journey time should be displayed.");
+        Assert.That(journeyTime, Does.Match(@"\d+\s*min"), "Updated journey time should specify a valid duration in minutes.");
     }
 
     [When(@"I click on ""View Details""")]
@@ -118,6 +121,8 @@ public class JourneyPlannerSteps
     public async Task ThenCompleteAccessInformationShouldBeDisplayedFor(string stationName)
     {
         await Expect(_resultsPage.FullWidthContent).ToContainTextAsync(stationName);
+        var accessInfo = await _resultsPage.GetAccessibilityDetailsTextAsync();
+        Assert.That(accessInfo, Does.Contain(stationName).IgnoreCase, $"Station name '{stationName}' should appear in expanded details.");
         var isAccessDisplayed = await _resultsPage.IsAccessInformationDisplayedForStationAsync(stationName);
         Assert.That(isAccessDisplayed, Is.True, $"Access information should be displayed for {stationName}.");
     }
@@ -134,6 +139,8 @@ public class JourneyPlannerSteps
     {
         var errorMessage = await _resultsPage.GetErrorOrDisambiguationMessageAsync();
         Assert.That(errorMessage, Is.Not.Empty, "An error or disambiguation message should be displayed.");
+        Assert.That(errorMessage, Does.Contain("Sorry").Or.Contain("not find").Or.Contain("more than one location").Or.Contain("valid"),
+            "Error or disambiguation message should explain why no journey results were found.");
     }
 
     [Then(@"a validation error ""(.*)"" should be displayed for the From field")]
