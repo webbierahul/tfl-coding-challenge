@@ -21,10 +21,8 @@ public class PlaywrightDriver : IAsyncDisposable
             SlowMo = settings.SlowMoMs,
             Args = new[]
             {
-                "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--disable-infobars",
                 "--window-size=1280,800"
             }
         };
@@ -57,23 +55,6 @@ public class PlaywrightDriver : IAsyncDisposable
         }
 
         var context = await browser.NewContextAsync(contextOptions);
-
-        // Mask automation flags for Cloudflare bot verification
-        await context.AddInitScriptAsync(@"
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            });
-            window.chrome = {
-                runtime: {}
-            };
-            Object.defineProperty(navigator, 'plugins', {
-                get: () => [1, 2, 3, 4, 5]
-            });
-            Object.defineProperty(navigator, 'languages', {
-                get: () => ['en-GB', 'en']
-            });
-        ");
-
         context.SetDefaultTimeout(settings.DefaultTimeoutMs);
         return context;
     }

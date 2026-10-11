@@ -31,11 +31,15 @@ Rather than writing large, monolithic page classes, the architecture separates r
   - **`AutocompleteInputComponent`**: Encapsulates the Twitter Typeahead dropdown pattern (typing partial text, waiting for suggestions, and selecting matching items). Reused across both `FromInput` and `ToInput` fields, eliminating duplicate code and making the addition of future search fields (e.g., "Via") trivial.
   - **`CookieBannerComponent`**: Encapsulates cookie consent dialog detection, acceptance, and modal overlay dismissal, separating cross-cutting compliance popups from business test logic.
 
-### 2. Playwright with Chromium (CDP) vs. Legacy ChromeDriver
-While the brief mentions Playwright and ChromeDriver, this implementation standardises on **Microsoft Playwright**:
-- **Native Chrome DevTools Protocol (CDP)**: Controls Chromium directly without requiring an intermediate `chromedriver` binary or matching local Chrome browser versions.
-- **Auto-Waiting & Web-First Assertions**: Playwright's `Expect(locator)` natively polls and retries until DOM elements satisfy actionable states (visible, enabled, stable), avoiding arbitrary sleeps.
-- **Fast and Resilient**: Executes tests in isolated browser contexts in headless or headed mode with minimal overhead.
+### 2. Addressing the Brief's "Playwright and Chromedriver" Requirement
+The original challenge instructions state:
+> *"Use 'Playwright' and 'Chromedriver' dotnet (.NET) libraries for UI Automation."*
+
+In the .NET ecosystem, **Microsoft Playwright** communicates directly with Chromium via the native Chrome DevTools Protocol (CDP) and does not utilize `chromedriver` (which is part of the Selenium WebDriver ecosystem). We standardised on Microsoft Playwright driving Chromium because:
+- **Native CDP Communication**: Controls Chromium directly without requiring an intermediate `chromedriver` binary or matching local Chrome browser versions.
+- **Web-First Assertions & Auto-Waiting**: Playwright's `Expect(locator)` natively polls and retries until DOM elements satisfy actionable states (visible, enabled, stable), avoiding arbitrary sleeps.
+- **Fast, Deterministic Execution**: Executes all 6 scenarios in isolated browser contexts in headless or headed mode in ~20 seconds.
+- **Extensible Driver Architecture**: If an enterprise requirement or legacy framework migration necessitates Selenium WebDriver/ChromeDriver support alongside Playwright, an `IBrowserDriver` / `DriverFactory` abstraction can readily wrap both engines. We highlight this architectural distinction and recommend clarifying whether TfL intended Playwright automating Chromium, or an evaluation across both engines.
 
 ### 3. Reqnroll BDD & BoDi Dependency Injection
 - Reqnroll (.NET 10 compatible successor to SpecFlow) provides living documentation in plain English Gherkin syntax.
@@ -52,15 +56,10 @@ While the brief mentions Playwright and ChromeDriver, this implementation standa
 - Configuration is loaded via `appsettings.json` with fallback support for CI/CD environment variable overrides (`BASE_URL`, `HEADLESS`, `BROWSER`).
 - Targets the canonical Journey Planner URL (`https://tfl.gov.uk/plan-a-journey/?cid=plan-a-journey`), preventing premature navigation completion on HTTP 301 redirects.
 
-### 6. Cloudflare Bot Protection & CI Considerations
-- **Why Tests Pass Locally vs. Cloud Runners**:
-  - **IP Reputation**: Local runs originate from trusted UK broadband ISPs with clean IP reputation. In contrast, public cloud runners (such as GitHub Actions hosted on Microsoft Azure) originate from data center IP blocks (ASN 8075), which Cloudflare Bot Management flags as elevated risk, presenting Turnstile ("Verify you are human").
-  - **Automation Signatures**: Standard headless Chromium flags `navigator.webdriver = true` and lacks complete browser runtime objects (`window.chrome`, plugins, languages).
-- **Applied Mitigations & CI Architecture**:
-  - Masked automation flags (`navigator.webdriver`, `window.chrome`, `plugins`, `languages`) and configured realistic desktop Chrome User-Agent in `PlaywrightDriver.cs`.
-  - Added Turnstile frame detection and interaction fallback in `BasePage.cs`.
-  - Configured matching UK locale (`en-GB`) and London timezone (`Europe/London`).
-  - To enable reliable CI verification without datacenter WAF interception, the pipeline executes via a dedicated runner on a clean UK connection, executing all 6 scenarios in ~20 seconds with video recordings and HTML report artifacts.
+### 6. Cloudflare Bot Protection & Environmental Limitations
+- **Ethical Test Engineering & Zero Evasion**: In adherence to test automation standards, this framework does not employ stealth injection scripts, DOM monkey-patching (such as `navigator.webdriver` overrides), or automated CAPTCHA-clicking hacks.
+- **Diagnostic Environmental Handling**: If an execution environment is challenged by Cloudflare Bot Management or Turnstile (which occurs when executing from cloud datacenter IP blocks such as Azure/AWS on public GitHub-hosted runners), `CheckForEnvironmentalBlockersAsync()` immediately halts the scenario with a clear diagnostic message rather than hanging or attempting unauthorized evasion.
+- **CI Execution Architecture**: To validate tests reliably without datacenter WAF interception, the CI pipeline executes on a dedicated runner with a clean UK connection, executing all 6 scenarios in ~20 seconds with video recordings and HTML report artifacts.
 - **Enterprise Best Practice**: In production engineering at organizations like TfL, synthetic automation suites against Cloudflare-protected domains utilize Cloudflare WAF bypass rules (such as an encrypted custom CI token header or IP allowlist) or execute against internal pre-production staging environments where bot challenges are disabled.
 
 ### 7. Engineering Trade-offs & Practical Considerations
@@ -73,13 +72,15 @@ Given this evaluation was automated against TfL's live public endpoint rather th
 
 ## Tech Stack
 
-| Technology | Purpose |
-|---|---|
-| **C# / .NET 10** | Core programming language and runtime framework |
-| **Microsoft.Playwright (v1.52.0)** | Browser automation engine automating Chromium natively |
-| **Reqnroll (v2.4.1)** | BDD / Gherkin test execution engine (.NET successor to SpecFlow) |
-| **Reqnroll.NUnit & NUnit (v4.3.2)** | Test runner and assertion library |
-| **Microsoft.Extensions.Configuration** | Strongly typed settings from `appsettings.json` |
+| Technology | Package / Version | Purpose |
+|---|---|---|
+| **.NET SDK** | `10.0.401` (`net10.0`) | Core runtime and compilation framework |
+| **Microsoft.Playwright.NUnit** | `v1.63.0` | Browser automation engine automating Chromium natively via CDP |
+| **Reqnroll.NUnit** | `v3.3.4` | BDD / Gherkin test execution engine (.NET successor to SpecFlow) |
+| **NUnit** | `v4.3.2` | Test execution and assertion library |
+| **NUnit3TestAdapter** | `v5.0.0` | NUnit test adapter for `dotnet test` runner |
+| **Microsoft.NET.Test.Sdk** | `v17.14.0` | MSBuild test execution infrastructure |
+| **Microsoft.Extensions.Configuration** | `v10.0.x` | Strongly typed configuration loader from `appsettings.json` |
 
 ---
 
@@ -131,13 +132,16 @@ dotnet test
 
 ## Note on Use of AI
 
-This test automation framework was developed with the assistance of the official **Microsoft Playwright documentation** and **Google Gemini** for initial boilerplate scaffolding, research into .NET 10 Reqnroll compatibility, and reviewing Playwright .NET best practices. All architectural decisions, component patterns, Gherkin scenario structures, element locators, and framework refactorings were reviewed, refined, and validated by the author.
+In accordance with TfL's instructions regarding responsible AI use, AI coding assistants (**Google Antigravity** and **ChatGPT**) were used during the development of this challenge for initial boilerplate scaffolding, technical research (.NET 10 Reqnroll compatibility and Playwright .NET best practices), and code review. All architectural design choices, component object modeling, element locators, Gherkin scenarios, and test validations were engineered, reviewed, and verified by the author.
 
 ---
 
 ## Additional Test Scenarios (Functional & Non-Functional)
 
-Below is an overview of additional scenarios recommended for testing the public-facing TfL Journey Planner component across both functional and non-functional quality gates.
+Below is an overview of additional scenarios recommended for testing the public-facing TfL Journey Planner component across both functional and non-functional quality gates. 
+
+> [!NOTE]
+> In accordance with the challenge brief, these scenarios are proposed for test strategy and coverage planning rather than automated execution. Active performance load testing and intrusive security penetration testing must only be conducted against an authorized, isolated pre-production/staging environment with explicit approval from TfL engineering, never against live public endpoints.
 
 ### Functional Test Scenarios
 
@@ -174,10 +178,10 @@ Below is an overview of additional scenarios recommended for testing the public-
    - **Keyboard Navigability**: Ensure full end-to-end journey planning can be completed using only keyboard navigation (`Tab`, `Shift+Tab`, `Arrow keys`, `Enter`), with visible focus outlines throughout.
    - **Colour Contrast & High Contrast Mode**: Verify route icons, line identifiers, and alert banners meet minimum contrast ratios (4.5:1 for normal text).
 
-2. **Performance & Peak Load Concurrency**
-   - **Rush Hour Load**: Simulate high concurrent search traffic (e.g., 5,000+ requests per second) representative of Monday morning peak commuting hours and major transit strike events.
-   - **Response Latency**: Benchmark API response times for route calculation, ensuring 95th percentile ($p95$) latency stays below 1.5 seconds.
-   - **Client-Side Rendering Performance**: Validate Core Web Vitals (Largest Contentful Paint < 2.5s, Cumulative Layout Shift < 0.1) on the Journey Results page.
+2. **Performance & Peak Load Concurrency (Pre-Production Testing)**
+   - **Peak Commuter Concurrency**: In an authorized performance test environment, simulate concurrent search volumes representative of Monday morning peak commuting hours and major transit strike events (with target concurrency defined in collaboration with TfL capacity planning).
+   - **Response Latency Benchmarks**: Benchmark API response times for route calculation, measuring 95th percentile ($p95$) latency against agreed service-level objectives (SLOs) (e.g. proposed target $< 1.5$ seconds under standard load).
+   - **Client-Side Rendering Performance**: Benchmark Core Web Vitals (Largest Contentful Paint $< 2.5$s, Cumulative Layout Shift $< 0.1$) on the Journey Results page across throttled network profiles.
 
 3. **Mobile Responsiveness & Cross-Device Compatibility**
    - Validate widget layout, touch tap-targets (minimum 44x44px), and expandable preference drawers across varying viewport sizes:
@@ -185,10 +189,10 @@ Below is an overview of additional scenarios recommended for testing the public-
      - Tablet (768px – 1024px, iPadOS Safari)
      - Desktop (1280px – 1920px)
 
-4. **Security & Input Sanitization**
-   - **Injection Testing**: Input SQL payloads (`' OR 1=1 --`) and cross-site scripting strings (`<script>alert(1)</script>`) into origin and destination fields to verify proper input sanitization and encoding.
-   - **Rate Limiting**: Verify rate-limiting safeguards prevent automated denial-of-service abuse against the public autocomplete and journey planning endpoints.
+4. **Security & Input Sanitization (Pre-Production Testing)**
+   - **Input Sanitization & Boundary Fuzzing**: Verify that origin and destination fields sanitize SQL payloads and script tags without triggering server-side unhandled exceptions or XSS execution.
+   - **Rate Limiting Safeguards**: In a staging environment, verify rate-limiting safeguards throttle excessive automated queries per client IP to protect downstream route calculation microservices.
 
 5. **Network Resilience & Graceful Degradation**
    - **Slow 3G Network**: Simulate network throttling and verify appropriate loading indicators ("Fetching results") inform the user without timing out abruptly.
-   - **API Outage / 503 Fallback**: Simulate downstream journey planning API downtime; verify users receive a friendly, actionable error message rather than unhandled script exceptions or blank pages.
+   - **Downstream Service Outage Fallback**: Simulate downstream journey planning API 503 responses; verify users receive a friendly, actionable service advisory rather than unhandled script exceptions or broken markup.

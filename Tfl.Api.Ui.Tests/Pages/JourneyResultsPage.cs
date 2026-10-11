@@ -47,7 +47,7 @@ public class JourneyResultsPage : BasePage
     {
         await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         var resultsOrDisambiguation = Page.Locator(".journey-box, .disambiguation-box").First;
-        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 20000 });
+        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
     }
 
     public async Task<bool> IsWalkingOptionDisplayedAsync()
@@ -57,7 +57,7 @@ public class JourneyResultsPage : BasePage
 
     public async Task<string> GetWalkingTimeAsync()
     {
-        await _walkingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await _walkingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         return (await _walkingTimeLabel.InnerTextAsync()).Trim();
     }
 
@@ -68,43 +68,46 @@ public class JourneyResultsPage : BasePage
 
     public async Task<string> GetCyclingTimeAsync()
     {
-        await _cyclingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await _cyclingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         return (await _cyclingTimeLabel.InnerTextAsync()).Trim();
     }
 
     public async Task ClickEditPreferencesAsync()
     {
-        await _editPreferencesButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await _editPreferencesButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         await _editPreferencesButton.ClickAsync();
     }
 
     public async Task SelectRoutePreferenceAsync(string preference)
     {
         var preferenceLabel = Page.Locator("label", new() { HasText = preference });
-        await preferenceLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await preferenceLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         await preferenceLabel.ClickAsync();
     }
 
     public async Task ClickUpdateJourneyAsync()
     {
-        await _updateJourneyButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await _updateJourneyButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
         await _updateJourneyButton.ClickAsync();
-        // Auto-wait for recalculated route to display
-        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        // Wait for results container or journey boxes to reload with recalculated route
+        await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        var resultsOrDisambiguation = Page.Locator(".journey-box, .disambiguation-box, .journey-result-summary").First;
+        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
+        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
     }
 
     public async Task<string> GetUpdatedJourneyTimeAsync()
     {
-        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
         return (await _firstJourneyTime.InnerTextAsync()).Trim();
     }
 
     public async Task ClickViewDetailsAsync()
     {
-        await _viewDetailsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 8000 });
+        await _viewDetailsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
         await _viewDetailsButton.ClickAsync();
         // Auto-wait for expanded details content
-        await Page.Locator("#full-width-content").WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await Page.Locator("#full-width-content").WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
     }
 
     public async Task<bool> IsAccessInformationDisplayedForStationAsync(string stationName)

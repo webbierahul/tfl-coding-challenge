@@ -19,33 +19,23 @@ public abstract class BasePage
         await CookieBanner.AcceptIfPresentAsync();
     }
 
-    public async Task HandleCloudflareIfPresentAsync()
+    public async Task CheckForEnvironmentalBlockersAsync()
     {
-        try
+        var title = await Page.TitleAsync();
+        if (title.Contains("Verification", StringComparison.OrdinalIgnoreCase) ||
+            title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase))
         {
-            var title = await Page.TitleAsync();
-            if (title.Contains("Verification", StringComparison.OrdinalIgnoreCase) ||
-                title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase))
-            {
-                var checkbox = Page.FrameLocator("iframe[src*='challenges.cloudflare.com']")
-                    .Locator("input[type='checkbox'], .ctp-checkbox-label, #challenge-stage")
-                    .First;
-
-                await checkbox.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
-                await checkbox.ClickAsync();
-                await Page.WaitForTimeoutAsync(2500);
-            }
-        }
-        catch
-        {
-            // Best effort - do not fail if challenge elements are absent
+            throw new InvalidOperationException(
+                "Access blocked: TfL endpoint presented a Cloudflare Bot / Turnstile verification challenge. " +
+                "Automated execution against the live public edge requires execution from a trusted IP network, " +
+                "an authorized WAF bypass token, or execution in an isolated staging environment.");
         }
     }
 
     public async Task NavigateToAsync(string url)
     {
         await Page.GotoAsync(url, new() { WaitUntil = WaitUntilState.DOMContentLoaded });
-        await HandleCloudflareIfPresentAsync();
+        await CheckForEnvironmentalBlockersAsync();
         await AcceptCookiesIfPresentAsync();
     }
 }
