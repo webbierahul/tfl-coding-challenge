@@ -44,7 +44,8 @@ public class PlaywrightDriver : IAsyncDisposable
         {
             ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
             Locale = "en-GB",
-            TimezoneId = "Europe/London"
+            TimezoneId = "Europe/London",
+            UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
         };
 
         if (settings.RecordVideo)
@@ -61,6 +62,15 @@ public class PlaywrightDriver : IAsyncDisposable
         await context.AddInitScriptAsync(@"
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined
+            });
+            window.chrome = {
+                runtime: {}
+            };
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5]
+            });
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-GB', 'en']
             });
         ");
 

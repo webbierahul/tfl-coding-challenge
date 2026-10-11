@@ -450,3 +450,8 @@ TestResults/
 
 # Reqnroll / SpecFlow generated files
 *.feature.cs
+
+# Local test artifacts & OS directories
+.local/
+Library/
+tfl-test-report-and-videos*/
