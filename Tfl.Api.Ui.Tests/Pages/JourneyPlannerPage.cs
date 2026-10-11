@@ -1,54 +1,49 @@
 using Microsoft.Playwright;
+using Tfl.Api.Ui.Tests.Pages.Components;
 
 namespace Tfl.Api.Ui.Tests.Pages;
 
 public class JourneyPlannerPage : BasePage
 {
-    private readonly ILocator _fromInput;
-    private readonly ILocator _toInput;
     private readonly ILocator _planJourneyButton;
     private readonly ILocator _fromValidationError;
     private readonly ILocator _toValidationError;
-    private readonly ILocator _suggestions;
 
+    public AutocompleteInputComponent FromInput { get; }
+    public AutocompleteInputComponent ToInput { get; }
     public ILocator FromValidationError => _fromValidationError;
     public ILocator ToValidationError => _toValidationError;
 
     public JourneyPlannerPage(IPage page) : base(page)
     {
-        _fromInput = Page.Locator("#InputFrom");
-        _toInput = Page.Locator("#InputTo");
-        _planJourneyButton = Page.GetByRole(AriaRole.Button, new() { Name = "Plan my journey" })
-            .Or(Page.Locator("#plan-journey-button")).First;
-        _fromValidationError = Page.Locator("#InputFrom-error");
-        _toValidationError = Page.Locator("#InputTo-error");
-        _suggestions = Page.Locator(".tt-suggestion, .stop-name");
+        var suggestions = page.Locator(".tt-suggestion, .stop-name");
+        FromInput = new AutocompleteInputComponent(page.Locator("#InputFrom"), suggestions);
+        ToInput = new AutocompleteInputComponent(page.Locator("#InputTo"), suggestions);
+
+        _planJourneyButton = page.GetByRole(AriaRole.Button, new() { Name = "Plan my journey" })
+            .Or(page.Locator("#plan-journey-button")).First;
+        _fromValidationError = page.Locator("#InputFrom-error");
+        _toValidationError = page.Locator("#InputTo-error");
     }
 
     public async Task EnterFromLocationAndSelectSuggestionAsync(string partialText, string suggestionToSelect)
     {
-        await _fromInput.ClickAsync();
-        await _fromInput.FillAsync(partialText);
-        await SelectSuggestionAsync(suggestionToSelect);
+        await FromInput.EnterAndSelectSuggestionAsync(partialText, suggestionToSelect);
     }
 
     public async Task EnterToLocationAndSelectSuggestionAsync(string partialText, string suggestionToSelect)
     {
-        await _toInput.ClickAsync();
-        await _toInput.FillAsync(partialText);
-        await SelectSuggestionAsync(suggestionToSelect);
+        await ToInput.EnterAndSelectSuggestionAsync(partialText, suggestionToSelect);
     }
 
     public async Task EnterFromLocationRawAsync(string location)
     {
-        await _fromInput.ClickAsync();
-        await _fromInput.FillAsync(location);
+        await FromInput.EnterRawAsync(location);
     }
 
     public async Task EnterToLocationRawAsync(string location)
     {
-        await _toInput.ClickAsync();
-        await _toInput.FillAsync(location);
+        await ToInput.EnterRawAsync(location);
     }
 
     public async Task ClickPlanJourneyAsync()
@@ -66,15 +61,5 @@ public class JourneyPlannerPage : BasePage
     {
         await _toValidationError.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
         return (await _toValidationError.InnerTextAsync()).Trim();
-    }
-
-    private async Task SelectSuggestionAsync(string suggestionText)
-    {
-        // Wait for autocomplete typeahead list to render
-        await _suggestions.First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 8000 });
-
-        var option = Page.Locator(".tt-suggestion, .stop-name", new() { HasText = suggestionText }).First;
-        await option.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
-        await option.ClickAsync();
     }
 }
