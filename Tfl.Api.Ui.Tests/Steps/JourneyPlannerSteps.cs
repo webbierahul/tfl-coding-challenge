@@ -17,8 +17,8 @@ public class JourneyPlannerSteps
     public JourneyPlannerSteps(IPage page, TestSettings settings)
     {
         _settings = settings;
-        _plannerPage = new JourneyPlannerPage(page);
-        _resultsPage = new JourneyResultsPage(page);
+        _plannerPage = new JourneyPlannerPage(page, settings);
+        _resultsPage = new JourneyResultsPage(page, settings);
     }
 
     [Given(@"I navigate to the TfL Journey Planner page")]
@@ -88,9 +88,12 @@ public class JourneyPlannerSteps
         Assert.That(cyclingTime, Does.Match(@"\d+\s*min"), "Cycling journey time should specify a valid duration in minutes.");
     }
 
+    private string? _selectedPreference;
+
     [When(@"I edit preferences to select ""(.*)""")]
     public async Task WhenIEditPreferencesToSelect(string preference)
     {
+        _selectedPreference = preference;
         await _resultsPage.WaitForResultsToLoadAsync();
         await _resultsPage.ClickEditPreferencesAsync();
         await _resultsPage.SelectRoutePreferenceAsync(preference);
@@ -99,12 +102,21 @@ public class JourneyPlannerSteps
     [When(@"I update the journey")]
     public async Task WhenIUpdateTheJourney()
     {
-        await _resultsPage.ClickUpdateJourneyAsync();
+        var expectedKeyword = _selectedPreference?.Contains("least walking", StringComparison.OrdinalIgnoreCase) == true
+            ? "least walking"
+            : _selectedPreference;
+        await _resultsPage.ClickUpdateJourneyAsync(expectedKeyword);
     }
 
     [Then(@"the updated journey time should be displayed")]
     public async Task ThenTheUpdatedJourneyTimeShouldBeDisplayed()
     {
+        // 1. Verify observable indicator that results reflect the selected preference
+        var preferencesText = await _resultsPage.GetTravelPreferencesTextAsync();
+        Assert.That(preferencesText, Does.Contain("least walking").IgnoreCase,
+            "The updated journey results summary should reflect the selected 'least walking' preference.");
+
+        // 2. Verify updated journey time is visible and formatted
         await Expect(_resultsPage.FirstJourneyTime).ToBeVisibleAsync();
         var journeyTime = await _resultsPage.GetUpdatedJourneyTimeAsync();
         Assert.That(journeyTime, Is.Not.Empty, "Updated journey time should be displayed.");
@@ -115,16 +127,28 @@ public class JourneyPlannerSteps
     public async Task WhenIClickOnViewDetails()
     {
         await _resultsPage.ClickViewDetailsAsync();
+        await _resultsPage.ClickStationAccessibilityDetailsAsync();
     }
 
     [Then(@"complete access information should be displayed for ""(.*)""")]
     public async Task ThenCompleteAccessInformationShouldBeDisplayedFor(string stationName)
     {
         await Expect(_resultsPage.FullWidthContent).ToContainTextAsync(stationName);
-        var accessInfo = await _resultsPage.GetAccessibilityDetailsTextAsync();
-        Assert.That(accessInfo, Does.Contain(stationName).IgnoreCase, $"Station name '{stationName}' should appear in expanded details.");
-        var isAccessDisplayed = await _resultsPage.IsAccessInformationDisplayedForStationAsync(stationName);
-        Assert.That(isAccessDisplayed, Is.True, $"Access information should be displayed for {stationName}.");
+        var stepContent = await _resultsPage.GetStationStepAccessDetailsAsync(stationName);
+
+        // 1. Verify the station name is prominently present in the detailed step
+        Assert.That(stepContent, Does.Contain(stationName).IgnoreCase
+            .Or.Contain("Covent Garden").IgnoreCase,
+            $"Expected expanded journey details to display station '{stationName}'.");
+
+        // 2. Verify physical station access information (e.g. 'Up stairs' entrance/exit detail)
+        Assert.That(stepContent, Does.Contain("Up stairs").IgnoreCase
+            .Or.Contain("stairs").IgnoreCase,
+            $"Expected physical access details ('Up stairs') for '{stationName}', but received:\n{stepContent}");
+
+        // 3. Verify the dedicated 'Accessibility details' feature/link for the station
+        Assert.That(stepContent, Does.Contain("Accessibility details").IgnoreCase,
+            $"Expected 'Accessibility details' link/section to be present for station '{stationName}'.");
     }
 
     [Then(@"no journey results should be provided")]

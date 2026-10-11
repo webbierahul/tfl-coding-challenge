@@ -1,4 +1,5 @@
 using Microsoft.Playwright;
+using Tfl.Api.Ui.Tests.Configuration;
 using Tfl.Api.Ui.Tests.Pages.Components;
 
 namespace Tfl.Api.Ui.Tests.Pages;
@@ -6,11 +7,15 @@ namespace Tfl.Api.Ui.Tests.Pages;
 public abstract class BasePage
 {
     protected readonly IPage Page;
+    protected readonly TestSettings Settings;
     public CookieBannerComponent CookieBanner { get; }
 
-    protected BasePage(IPage page)
+    protected float DefaultTimeoutMs => Settings.DefaultTimeoutMs;
+
+    protected BasePage(IPage page, TestSettings? settings = null)
     {
         Page = page;
+        Settings = settings ?? TestSettings.Load();
         CookieBanner = new CookieBannerComponent(page);
     }
 

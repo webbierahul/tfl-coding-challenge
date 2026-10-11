@@ -1,4 +1,5 @@
 using Microsoft.Playwright;
+using Tfl.Api.Ui.Tests.Configuration;
 
 namespace Tfl.Api.Ui.Tests.Pages;
 
@@ -25,7 +26,7 @@ public class JourneyResultsPage : BasePage
     public ILocator DisambiguationBox => _disambiguationBox;
     public ILocator FullWidthContent => Page.Locator("#full-width-content");
 
-    public JourneyResultsPage(IPage page) : base(page)
+    public JourneyResultsPage(IPage page, TestSettings? settings = null) : base(page, settings)
     {
         _walkingJourneyBox = Page.Locator(".journey-box.walking");
         _cyclingJourneyBox = Page.Locator(".journey-box.cycling");
@@ -47,7 +48,7 @@ public class JourneyResultsPage : BasePage
     {
         await Page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         var resultsOrDisambiguation = Page.Locator(".journey-box, .disambiguation-box").First;
-        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
+        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
     }
 
     public async Task<bool> IsWalkingOptionDisplayedAsync()
@@ -57,7 +58,7 @@ public class JourneyResultsPage : BasePage
 
     public async Task<string> GetWalkingTimeAsync()
     {
-        await _walkingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await _walkingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         return (await _walkingTimeLabel.InnerTextAsync()).Trim();
     }
 
@@ -68,71 +69,85 @@ public class JourneyResultsPage : BasePage
 
     public async Task<string> GetCyclingTimeAsync()
     {
-        await _cyclingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await _cyclingTimeLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         return (await _cyclingTimeLabel.InnerTextAsync()).Trim();
     }
 
     public async Task ClickEditPreferencesAsync()
     {
-        await _editPreferencesButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await _editPreferencesButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         await _editPreferencesButton.ClickAsync();
     }
 
     public async Task SelectRoutePreferenceAsync(string preference)
     {
         var preferenceLabel = Page.Locator("label", new() { HasText = preference });
-        await preferenceLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await preferenceLabel.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         await preferenceLabel.ClickAsync();
     }
 
-    public async Task ClickUpdateJourneyAsync()
+    public async Task<string> GetTravelPreferencesTextAsync()
     {
-        await _updateJourneyButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
+        var preferencesBox = Page.Locator(".travel-preferences, .summary-results, #full-width-content").First;
+        await preferencesBox.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
+        return (await preferencesBox.InnerTextAsync()).Trim();
+    }
+
+    public async Task ClickUpdateJourneyAsync(string? expectedPreferenceIndicator = "least walking")
+    {
+        await _updateJourneyButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         await _updateJourneyButton.ClickAsync();
 
-        // Condition-based wait: if an active loader or "Fetching results" animation appears, wait for it to clear
-        var loader = Page.Locator(".loader, .waiting, .loading, text='Fetching results'").First;
-        try
+        // 1. If an active loader or "Fetching results" animation is attached, wait for it to clear
+        var loader = Page.Locator(".loader, .waiting, .loading").Or(Page.GetByText("Fetching results")).First;
+        if (await loader.CountAsync() > 0 && await loader.IsVisibleAsync())
         {
-            await loader.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 2000 });
-            await loader.WaitForAsync(new() { State = WaitForSelectorState.Hidden, Timeout = 30000 });
-        }
-        catch
-        {
-            // Loader was brief or already resolved
+            await loader.WaitForAsync(new() { State = WaitForSelectorState.Hidden, Timeout = DefaultTimeoutMs });
         }
 
-        // Wait for recalculated journey results to be rendered and visible
+        // 2. Condition-based wait for the observable travel preference indicator on the page
+        if (!string.IsNullOrWhiteSpace(expectedPreferenceIndicator))
+        {
+            var preferenceIndicator = Page.Locator(".travel-preferences, .summary-results, #full-width-content")
+                .Filter(new() { HasText = expectedPreferenceIndicator }).First;
+            await preferenceIndicator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
+        }
+
+        // 3. Wait for recalculated journey results to be rendered and visible
         var resultsOrDisambiguation = Page.Locator(".journey-box, .disambiguation-box, .journey-result-summary").First;
-        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
-        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
+        await resultsOrDisambiguation.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
+        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
     }
 
     public async Task<string> GetUpdatedJourneyTimeAsync()
     {
-        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 30000 });
+        await _firstJourneyTime.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         return (await _firstJourneyTime.InnerTextAsync()).Trim();
     }
 
     public async Task ClickViewDetailsAsync()
     {
-        await _viewDetailsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
+        await _viewDetailsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         await _viewDetailsButton.ClickAsync();
         // Auto-wait for expanded details content
-        await Page.Locator("#full-width-content").WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15000 });
+        await Page.Locator("#full-width-content").WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
     }
 
-    public async Task<bool> IsAccessInformationDisplayedForStationAsync(string stationName)
+    public async Task ClickStationAccessibilityDetailsAsync()
     {
-        var content = await Page.Locator("#full-width-content").InnerTextAsync();
-        var hasStation = content.Contains(stationName, StringComparison.OrdinalIgnoreCase) 
-            || content.Contains("Covent Garden", StringComparison.OrdinalIgnoreCase);
-        var hasAccessDetails = content.Contains("Accessibility details", StringComparison.OrdinalIgnoreCase)
-            || content.Contains("Up stairs", StringComparison.OrdinalIgnoreCase)
-            || content.Contains("stairs", StringComparison.OrdinalIgnoreCase)
-            || content.Contains("lift", StringComparison.OrdinalIgnoreCase);
+        var accessibilityLink = Page.Locator("a:has-text('Accessibility details'), button:has-text('Accessibility details'), .accessibility-details").First;
+        if (await accessibilityLink.CountAsync() > 0 && await accessibilityLink.IsVisibleAsync())
+        {
+            await accessibilityLink.ClickAsync();
+        }
+    }
 
-        return hasStation && hasAccessDetails;
+    public async Task<string> GetStationStepAccessDetailsAsync(string stationName)
+    {
+        var stepContainer = Page.Locator(".step, .detailed-step, .journey-detail-step, #full-width-content")
+            .Filter(new() { HasText = stationName }).First;
+        await stepContainer.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
+        return await stepContainer.InnerTextAsync();
     }
 
     public async Task<string> GetAccessibilityDetailsTextAsync()

@@ -1,4 +1,5 @@
 using Microsoft.Playwright;
+using Tfl.Api.Ui.Tests.Configuration;
 using Tfl.Api.Ui.Tests.Pages.Components;
 
 namespace Tfl.Api.Ui.Tests.Pages;
@@ -14,7 +15,7 @@ public class JourneyPlannerPage : BasePage
     public ILocator FromValidationError => _fromValidationError;
     public ILocator ToValidationError => _toValidationError;
 
-    public JourneyPlannerPage(IPage page) : base(page)
+    public JourneyPlannerPage(IPage page, TestSettings? settings = null) : base(page, settings)
     {
         var suggestions = page.Locator(".tt-suggestion, .stop-name");
         FromInput = new AutocompleteInputComponent(page.Locator("#InputFrom"), suggestions);
@@ -53,13 +54,13 @@ public class JourneyPlannerPage : BasePage
 
     public async Task<string> GetFromValidationErrorAsync()
     {
-        await _fromValidationError.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await _fromValidationError.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         return (await _fromValidationError.InnerTextAsync()).Trim();
     }
 
     public async Task<string> GetToValidationErrorAsync()
     {
-        await _toValidationError.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await _toValidationError.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = DefaultTimeoutMs });
         return (await _toValidationError.InnerTextAsync()).Trim();
     }
 }
