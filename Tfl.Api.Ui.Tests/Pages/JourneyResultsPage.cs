@@ -9,7 +9,6 @@ public class JourneyResultsPage : BasePage
     private readonly ILocator _walkingTimeLabel;
     private readonly ILocator _cyclingTimeLabel;
     private readonly ILocator _editPreferencesButton;
-    private readonly ILocator _routesWithLeastWalkingLabel;
     private readonly ILocator _updateJourneyButton;
     private readonly ILocator _firstJourneyTime;
     private readonly ILocator _viewDetailsButton;
@@ -34,7 +33,6 @@ public class JourneyResultsPage : BasePage
         _cyclingTimeLabel = Page.Locator(".journey-box.cycling .col2.journey-info, .journey-box.cycling .col2");
         _editPreferencesButton = Page.GetByRole(AriaRole.Button, new() { Name = "Edit preferences" })
             .Or(Page.Locator(".edit-preferences button, button:has-text('Edit preferences')")).First;
-        _routesWithLeastWalkingLabel = Page.Locator("label", new() { HasText = "Routes with least walking" });
         _updateJourneyButton = Page.Locator("#more-journey-options").GetByRole(AriaRole.Button, new() { Name = "Update journey" })
             .Or(Page.Locator("#more-journey-options input[value='Update journey'], input[value='Update journey']")).Last;
         _firstJourneyTime = Page.Locator(".journey-time, .time-boxes").First;
