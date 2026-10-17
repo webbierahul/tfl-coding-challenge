@@ -136,7 +136,7 @@ dotnet test
 
 ## Note on Use of AI
 
-In accordance with TfL's instructions regarding responsible AI use, AI coding assistants (**Google Antigravity** and **ChatGPT**) were used during the development of this challenge for initial boilerplate scaffolding, technical research (.NET 10 Reqnroll compatibility and Playwright .NET best practices), and code review. All architectural design choices, component object modeling, element locators, Gherkin scenarios, and test validations were engineered, reviewed, and verified by the author.
+In accordance with TfL's instructions regarding responsible AI use, AI prompting (**Google Gemini** and **ChatGPT**) were used during the development of this challenge for initial boilerplate scaffolding, technical research (.NET 10 Reqnroll compatibility and Playwright .NET best practices), and code review. All architectural design choices, component object modeling, element locators, Gherkin scenarios, and test validations were engineered, reviewed, and verified by the author.
 
 ---
 
